@@ -5,7 +5,7 @@ from pathlib import Path, PurePath
 
 from config import VERSION
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(level=logging.ERROR, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("RuwaInstaller")
 
 
