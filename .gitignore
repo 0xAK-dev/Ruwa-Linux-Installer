@@ -1,0 +1,6 @@
+installer_window.build/
+installer_window.dist/
+__pycache__/
+installer_window.bin
+installer_window.onefile-build/
+venv
