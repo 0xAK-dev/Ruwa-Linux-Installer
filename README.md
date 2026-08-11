@@ -1,8 +1,6 @@
 # Ruwa Linux Installer
 
-A simple **Arch Linux installer** for [Ruwa](https://github.com/LuskusDeus/Ruwa).
-
-> **Note:** The installer currently supports **Arch Linux only**.
+A simple **Linux installer** for [Ruwa](https://github.com/LuskusDeus/Ruwa).
 
 The installer downloads **Ruwa 0.3.0**, builds the project, installs the required application files and creates a desktop entry.
 
@@ -23,22 +21,34 @@ The installer downloads **Ruwa 0.3.0**, builds the project, installs the require
 - Support for custom installation paths
 
 ## Requirements
+Install the dependencies:
 
-Currently, **Arch Linux is the only supported distribution**.
-
-Install the dependencies with:
+### Arch Linux
 
 ```bash
-sudo pacman -S base-devel cmake ninja git qt6-base qt6-tools qt6-declarative qt6-svg
+sudo pacman -S python base-devel cmake ninja git qt6-base qt6-tools qt6-declarative qt6-svg
 ```
+
+### Ubuntu
+
+```bash
+sudo apt install python3 python3-venv build-essential cmake ninja-build \
+    git qt6-base-dev qt6-tools-dev qt6-declarative-dev libqt6svg6-dev
+```
+### Fedora
+```bash
+sudo dnf install python3 python3-devel cmake ninja-build git gcc gcc-c++ make \
+    qt6-qtbase-devel qt6-qttools-devel qt6-qtdeclarative-devel qt6-qtsvg-devel
+```
+
 
 ## Installation
 
 ```bash
 git clone https://github.com/0xAK-dev/Ruwa-Linux-Installer.git
 cd Ruwa-Linux-Installer
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python installer_window.py
 ```

@@ -1,5 +1,4 @@
 import logging
-from posix import error
 
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QFont, QPixmap
@@ -21,7 +20,6 @@ from widget.custom_widget import AnimateWidget
 from widget.loading_widget import LoadingWidget
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 
 class WorkerThread(QThread):
@@ -44,17 +42,18 @@ class WorkerThread(QThread):
         missing_pkg = installer.check_packages()
 
         if missing_pkg:
+            distro, like = installer.get_distro_and_like()
             self.failed.emit(
                 f"Missing dependencies: {' '.join(missing_pkg)}\n"
                 f"To install them, run:\n"
-                f"sudo pacman -S {' '.join(missing_pkg)}"
+                f"sudo {" ".join(installer.get_package_install_command(distro, like))} {' '.join(missing_pkg)}"
             )
             return
 
         self.status.emit("Downloading Ruwa source code...")
-        download_error = installer.download_ruwa()
-        if download_error:
-            self.failed.emit(f"Failed to download Ruwa: {download_error}")
+        error = installer.download_ruwa()
+        if error:
+            self.failed.emit(f"Failed to download Ruwa: {error}")
             return
 
         self.status.emit("Applying patches...")

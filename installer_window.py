@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -12,6 +13,11 @@ from pages.setup_options import SetupOptions
 from pages.welcome_page import WelcomePage
 from resources.styles import stylesheet
 from widget.page_indicator import PageIndicator
+
+logging.basicConfig(
+    level=logging.ERROR,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 os.environ["QT_QPA_PLATFORMTHEME"] = "xdgdesktopportal"
 

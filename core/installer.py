@@ -1,11 +1,11 @@
 import logging
+import platform
 import shutil
 import subprocess
 from pathlib import Path, PurePath
 
 from config import VERSION
-
-logging.basicConfig(level=logging.ERROR, format="%(asctime)s [%(levelname)s] %(message)s")
+from utils.packages import DISTRO_PACKAGES
 logger = logging.getLogger("RuwaInstaller")
 
 
@@ -23,36 +23,84 @@ class RuwaInstaller:
         logger.info("Installation path: %s", path)
         logger.info("Options: %s", options)
 
+    @staticmethod
+    def get_distro_and_like() -> tuple[str, list[str]]:
+        os_info = platform.freedesktop_os_release()
+        distro = os_info.get("ID", "").lower()
+        like = os_info.get("ID_LIKE", "").lower().split()
+
+        logger.info("Distro: %s", distro)
+        return distro, like
 
     @staticmethod
-    def check_packages() -> list | None:
-        packages = [
-            "base-devel",
-            "cmake",
-            "ninja",
-            "git",
-            "qt6-base",
-            "qt6-tools",
-            "qt6-declarative",
-            "qt6-svg",
-        ]
-        missing = []
+    def get_dependencies_for_distro(distro: str, like: list[str]) -> list[str] | None:
+        if distro == "arch" or "arch" in like:
+            return DISTRO_PACKAGES["arch"]
+    
+        if distro == "debian" or "debian" in like:
+            return DISTRO_PACKAGES["debian"]
+    
+        if distro == "fedora" or "fedora" in like:
+            return DISTRO_PACKAGES["fedora"]
+    
+        logger.warning("Unsupported distro: %s", distro)
+        return None
 
+    
+    @staticmethod
+    def get_package_install_command(distro: str, like: list[str]):
+        if distro == "arch" or "arch" in like:
+            return ["pacman", "-S"]
+
+        elif distro in ("debian", "ubuntu", "linuxmint") or "debian" in like:
+            return ["apt", "install"]
+
+        elif distro in ("fedora", "rhel", "rocky", "almalinux") or "fedora" in like:
+            return ["dnf", "install"]
+
+        else:
+            logger.warning("Unsupported distro: %s", distro)
+
+    @staticmethod
+    def __get_package_check_command(distro: str, like: list[str]) -> list[str] | None:
+        if distro == "arch" or "arch" in like:
+            return ["pacman", "-Q"]
+
+        elif distro in ("debian", "ubuntu", "linuxmint") or "debian" in like:
+            return ["dpkg", "-s"]
+
+        elif distro in ("fedora", "rhel", "rocky", "almalinux") or "fedora" in like:
+            return ["rpm", "-q"]
+
+        else:
+            logger.warning("Unsupported distro: %s", distro)
+
+    @staticmethod
+    def check_packages() -> list[str]:
+        distro, like = RuwaInstaller.get_distro_and_like()
+        packages = RuwaInstaller.get_dependencies_for_distro(distro, like)
+        package_check_command = RuwaInstaller.__get_package_check_command(distro, like)
+        
+        if package_check_command is None or packages is None:
+            raise RuntimeError("Unsupported Linux distribution")
+
+        missing = []
         for package in packages:
-            result = subprocess.run(["pacman", "-Q", package],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            result = subprocess.run(
+                package_check_command + [package],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
 
             if result.returncode != 0:
                 logger.warning("Package is not installed: %s", package)
                 missing.append(package)
-            else: 
+            else:
                 logger.info("Package is installed: %s", package)
         if missing:
             logger.error("Missing packages: %s", ", ".join(missing))
-            return missing
 
+        return missing
 
     @staticmethod
     def download_ruwa() -> str | None:
@@ -61,7 +109,7 @@ class RuwaInstaller:
         logger.info("Starting Ruwa download...")
         logger.info("Repository: https://github.com/LuskusDeus/Ruwa.git")
         logger.info("Version/branch: %s", VERSION)
-        
+
         if Path(path).exists():
             shutil.rmtree(path)
 
@@ -79,12 +127,16 @@ class RuwaInstaller:
         )
         if result.returncode != 0:
             logger.error("git clone failed: %s", result.stderr.strip())
-            return result.stderr
+            return result.stderr    
         logger.info("Ruwa source downloaded successfully.")
 
 
+    @staticmethod
     def __fix_lasso_shader_check():
-        file_path = ( Path(RuwaInstaller.__project_path) / "src/shared/rendering/ShaderDirectoryResolver.cpp")
+        file_path = (
+            Path(RuwaInstaller.__project_path)
+            / "src/shared/rendering/ShaderDirectoryResolver.cpp"
+        )
         logger.info("Applying patch fix lasso shader: %s", file_path)
 
         old = '        QStringLiteral("lasso_mask.comp.glsl"),'
@@ -99,7 +151,8 @@ class RuwaInstaller:
             f.seek(0)
             f.write(content)
             f.truncate()
-
+            
+    @staticmethod
     def __apply_patches():
         file_path = ( Path(RuwaInstaller.__project_path) / "plugins/standard/distort/src/effects/Pinch.c")
         logger.info("Applying patch: %s", file_path)
@@ -140,7 +193,6 @@ class RuwaInstaller:
 
         logger.info("CMake configuration completed successfully.")
 
-
     @staticmethod
     def build():
         logger.info("Starting Ruwa build...")
@@ -148,16 +200,14 @@ class RuwaInstaller:
         RuwaInstaller.__apply_patches()
         result = subprocess.run(
             ["cmake", "--build", RuwaInstaller.__build_path, "-j"],
-            #capture_output=True,
+            capture_output=True,
             text=True,
         )
         if result.returncode != 0:
             logger.error("Build failed:\n%s", result.stderr)
             return result.stderr
 
-        shader_dir = (
-            Path(RuwaInstaller.__build_path) / "shaders"
-        )
+        shader_dir = Path(RuwaInstaller.__build_path) / "shaders"
         shader_file = shader_dir / "lasso_mask.comp.glsl"
         logger.info("Checking generated shaders...")
         logger.info("Shader directory: %s", shader_dir)
@@ -172,10 +222,8 @@ class RuwaInstaller:
                 shader_file,
             )
 
-    
-        logger.info("Ruwa build completed successfully.")      
+        logger.info("Ruwa build completed successfully.")
         return True
-
 
     @staticmethod
     def install():
@@ -218,7 +266,6 @@ class RuwaInstaller:
 
         return True
 
-
     @staticmethod
     def create_shortcut():
         logger.info("Creating desktop entry...")
@@ -228,7 +275,7 @@ class RuwaInstaller:
         destination_app.mkdir(parents=True, exist_ok=True)
 
         env_string = " ".join(
-            f'{key}={value}'
+            f"{key}={value}"
             for key, value in RuwaInstaller.options.items()
             if key != "add_shortcut"
         )
@@ -237,7 +284,7 @@ class RuwaInstaller:
         CONTENT = f"""[Desktop Entry]
 Type=Application
 Name=Ruwa
-Exec=env LD_LIBRARY_PATH={destination_app / 'lib'} {env_string} {destination_app}/Ruwa %U
+Exec=env LD_LIBRARY_PATH={destination_app / "lib"} {env_string} {destination_app}/Ruwa %U
 Icon=ruwa
 Terminal=false
 Categories=Graphics;
@@ -258,9 +305,8 @@ if __name__ == "__main__":
             path='~/.local/bin/ruwa-test'
         )
     installer.check_packages()
-    installer.download_ruwa()
-    installer.configure()
-    installer.build()
-    installer.install()
-    installer.create_shortcut()
-    
+    # installer.download_ruwa()
+    # installer.configure()
+    # installer.build()
+    # installer.install()
+    # installer.create_shortcut()
