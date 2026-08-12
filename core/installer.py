@@ -305,8 +305,8 @@ if __name__ == "__main__":
             path='~/.local/bin/ruwa-test'
         )
     installer.check_packages()
-    # installer.download_ruwa()
-    # installer.configure()
-    # installer.build()
-    # installer.install()
-    # installer.create_shortcut()
+    installer.download_ruwa()
+    installer.configure()
+    installer.build()
+    installer.install()
+    installer.create_shortcut()
