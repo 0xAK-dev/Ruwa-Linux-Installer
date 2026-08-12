@@ -5,7 +5,9 @@ import subprocess
 from pathlib import Path, PurePath
 
 from config import VERSION
+from utils.exceptions import UnsupportedDistributionError
 from utils.packages import DISTRO_PACKAGES
+
 logger = logging.getLogger("RuwaInstaller")
 
 
@@ -82,7 +84,7 @@ class RuwaInstaller:
         package_check_command = RuwaInstaller.__get_package_check_command(distro, like)
         
         if package_check_command is None or packages is None:
-            raise RuntimeError("Unsupported Linux distribution")
+            raise UnsupportedDistributionError(f"Unsupported Linux distribution: {distro or 'unknown'}")
 
         missing = []
         for package in packages:
@@ -126,10 +128,11 @@ class RuwaInstaller:
             text=True,
         )
         if result.returncode != 0:
-            logger.error("git clone failed: %s", result.stderr.strip())
-            return result.stderr    
+            error = result.stderr.strip()
+            logger.error("git clone failed: %s", error)
+            return error  
         logger.info("Ruwa source downloaded successfully.")
-
+        return None
 
     @staticmethod
     def __fix_lasso_shader_check():
@@ -154,23 +157,32 @@ class RuwaInstaller:
             
     @staticmethod
     def __apply_patches():
-        file_path = ( Path(RuwaInstaller.__project_path) / "plugins/standard/distort/src/effects/Pinch.c")
-        logger.info("Applying patch: %s", file_path)
-        
-        with open(file_path, "r+", encoding="utf-8",) as f:
-            content = f.read()
-            if "#include <math.h>" in content:
-                return
-
-            f.seek(0, 0)
-            f.write("#include <math.h>\n")
-            f.write(content)
+        try:
+            RuwaInstaller.__fix_lasso_shader_check()
+            file_path = ( Path(RuwaInstaller.__project_path) / "plugins/standard/distort/src/effects/Pinch.c")
+            logger.info("Applying patch: %s", file_path)
             
-        RuwaInstaller.__fix_lasso_shader_check()
-        logger.info("Patch applied successfully.")
+            with open(file_path, "r+", encoding="utf-8",) as f:
+                content = f.read()
+                
+                if "#include <math.h>" not in content:
+                    f.seek(0, 0)
+                    f.write("#include <math.h>\n")
+                    f.write(content)
+                
+            
+            logger.info("Patch applied successfully.")
+            return None
+            
+        except OSError as e:
+            logger.error("File operation failed: %s", e)
+            return str(e)
+            
+        
         
     @staticmethod
-    def configure() -> None:
+    def configure() ->str | None:
+        RuwaInstaller.__apply_patches()
         logger.info("Starting CMake configuration...")
         
         result = subprocess.run(
@@ -188,42 +200,29 @@ class RuwaInstaller:
             text=True,
         )
         if result.returncode != 0:
-            logger.error( "CMake configuration failed:\n%s", result.stderr, )
-            return result.stderr
+            error = result.stderr.strip()
+            logger.error( "CMake configuration failed:\n%s", error)
+            return error
 
         logger.info("CMake configuration completed successfully.")
+        return None
 
     @staticmethod
-    def build():
+    def build() -> str | None:
         logger.info("Starting Ruwa build...")
         
-        RuwaInstaller.__apply_patches()
         result = subprocess.run(
             ["cmake", "--build", RuwaInstaller.__build_path, "-j"],
             capture_output=True,
             text=True,
         )
         if result.returncode != 0:
-            logger.error("Build failed:\n%s", result.stderr)
-            return result.stderr
-
-        shader_dir = Path(RuwaInstaller.__build_path) / "shaders"
-        shader_file = shader_dir / "lasso_mask.comp.glsl"
-        logger.info("Checking generated shaders...")
-        logger.info("Shader directory: %s", shader_dir)
-        if shader_file.exists():
-            logger.info(
-                "Found shader: %s",
-                shader_file,
-            )
-        else:
-            logger.error(
-                "Missing shader: %s",
-                shader_file,
-            )
+            error = result.stderr.strip()
+            logger.error("Build failed:\n%s", error)
+            return error
 
         logger.info("Ruwa build completed successfully.")
-        return True
+        return None
 
     @staticmethod
     def install():
@@ -245,10 +244,12 @@ class RuwaInstaller:
         logger.info("Checking build resources...")
         try:
             for resource in resources:
-                if resource.exists():
-                    logger.info("Found: %s", resource)
-                else:
-                    logger.error("NOT FOUND: %s", resource)
+                if not resource.exists():
+                    error = f"Required resource not found: {resource}"
+                    logger.error(error)
+                    return error
+
+                logger.info("Found: %s", resource)
                     
                 destination = destination_app / resource.name
                 if resource.is_dir():
@@ -264,7 +265,8 @@ class RuwaInstaller:
             logger.exception("Installation failed")
             return str(e)
 
-        return True
+        logger.info("Installation completed successfully.")
+        return None
 
     @staticmethod
     def create_shortcut():

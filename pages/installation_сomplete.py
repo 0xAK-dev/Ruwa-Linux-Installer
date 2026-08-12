@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 from core.installer import RuwaInstaller
 from resources.styles import stylesheet
-from widget import loading_widget
+from utils.exceptions import UnsupportedDistributionError
 from widget.button import CapsuleButton
 from widget.custom_widget import AnimateWidget
 from widget.loading_widget import LoadingWidget
@@ -39,8 +39,12 @@ class WorkerThread(QThread):
         installer = RuwaInstaller(options=self.options, path=self.path)
 
         self.status.emit("Checking dependencies...")
-        missing_pkg = installer.check_packages()
-
+        try:
+            missing_pkg = installer.check_packages()
+        except UnsupportedDistributionError as e:
+            self.failed.emit(str(e))
+            return
+            
         if missing_pkg:
             distro, like = installer.get_distro_and_like()
             self.failed.emit(
@@ -51,24 +55,23 @@ class WorkerThread(QThread):
             return
 
         self.status.emit("Downloading Ruwa source code...")
-        error = installer.download_ruwa()
-        if error:
+        if (error := installer.download_ruwa()) is not None:
             self.failed.emit(f"Failed to download Ruwa: {error}")
             return
 
-        self.status.emit("Applying patches...")
-        installer.configure()
+        self.status.emit("Applying patches and configuring CMake...")
+        if (error := installer.configure()) is not None:
+            self.failed.emit(f"CMake configuration failed:\n{error}")
+            return
 
         self.status.emit("Building project (this may take 1–5 minutes)...")
-        build_result = installer.build()
-        if build_result is not True:
-            installer.build()
+        if (build_result := installer.build()) is not None:
             self.failed.emit(f"Build failed:\n{build_result}")
             return
 
         self.status.emit(f"Installing files to {self.path}")
         install_result = installer.install()
-        if install_result is not True:
+        if install_result is not None:
             self.failed.emit(f"Installation failed:\n{install_result}")
             return
             
