@@ -7,6 +7,8 @@ The installer downloads **Ruwa 0.3.0**, builds the project, installs the require
 
 ![Ruwa Linux Installer](assets/preview.png)
 
+![Ruwa Linux Installer](assets/Installed_Ruwa.png)
+
 ## Features
 
 - Install Ruwa 0.3.0
@@ -26,19 +28,17 @@ Install the dependencies:
 ### Arch Linux
 
 ```bash
-sudo pacman -S python base-devel cmake ninja git qt6-base qt6-tools qt6-declarative qt6-svg
+sudo pacman -S base-devel cmake ninja git qt6-base qt6-tools
 ```
 
 ### Ubuntu
 
 ```bash
-sudo apt install python3 python3-venv build-essential cmake ninja-build \
-    git qt6-base-dev qt6-tools-dev qt6-declarative-dev libqt6svg6-dev
+sudo apt install python3-venv build-essential cmake ninja-build git qt6-base-dev qt6-tools-dev
 ```
 ### Fedora
 ```bash
-sudo dnf install python3 python3-devel cmake ninja-build git gcc gcc-c++ make \
-    qt6-qtbase-devel qt6-qttools-devel qt6-qtdeclarative-devel qt6-qtsvg-devel
+sudo dnf install python3 python3-devel cmake ninja-build git gcc gcc-c++ qt6-qtbase-devel qt6-qttools-devel
 ```
 
 
