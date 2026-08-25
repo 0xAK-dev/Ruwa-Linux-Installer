@@ -2,7 +2,7 @@
 
 A simple **Linux installer** for [Ruwa](https://github.com/LuskusDeus/Ruwa).
 
-The installer downloads **Ruwa 0.3.0**, builds the project, installs the required application files and creates a desktop entry.
+The installer downloads Ruwa 0.3.0, builds the project, installs the required application files and creates a desktop entry.
 
 
 ![Ruwa Linux Installer](assets/preview.png)
@@ -11,7 +11,7 @@ The installer downloads **Ruwa 0.3.0**, builds the project, installs the require
 
 ## Features
 
-- Install Ruwa 0.3.0
+- Select the Ruwa version to install
 - Select a custom installation directory
 - Automatically clone the required Git tag
 - Build Ruwa from source
