@@ -4,7 +4,6 @@ import shutil
 import subprocess
 from pathlib import Path, PurePath
 
-from config import VERSION
 from utils.exceptions import UnsupportedDistributionError
 from utils.packages import DISTRO_PACKAGES
 
@@ -16,14 +15,17 @@ class RuwaInstaller:
     __build_path = "/tmp/ruwa/build"
     app_default_path = ""
     options = {}
+    version = ""
 
-    def __init__(self, options: dict, path: PurePath | str):
+    def __init__(self, options: dict, version: str, path: PurePath | str):
         RuwaInstaller.app_default_path = path
         RuwaInstaller.options = options
+        RuwaInstaller.version = version
 
         logger.info("Initializing Ruwa installer")
         logger.info("Installation path: %s", path)
         logger.info("Options: %s", options)
+        logger.info("Version: %s", version)
 
     @staticmethod
     def get_distro_and_like() -> tuple[str, list[str]]:
@@ -110,7 +112,7 @@ class RuwaInstaller:
 
         logger.info("Starting Ruwa download...")
         logger.info("Repository: https://github.com/LuskusDeus/Ruwa.git")
-        logger.info("Version/branch: %s", VERSION)
+        logger.info("Version/branch: %s", RuwaInstaller.version)
 
         if Path(path).exists():
             shutil.rmtree(path)
@@ -120,7 +122,7 @@ class RuwaInstaller:
                 "git",
                 "clone",
                 "-b",
-                VERSION,
+                RuwaInstaller.version,
                 "https://github.com/LuskusDeus/Ruwa.git",
                 path,
             ],

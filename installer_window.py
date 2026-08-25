@@ -2,20 +2,21 @@ import logging
 import os
 import sys
 
+from PySide6 import QtGui
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QLabel, QStackedWidget, QVBoxLayout, QWidget
 
-from config import VERSION
 from pages.installation_сomplete import InstallationComplite
 from pages.lisence import LicensePage
+from pages.select_version import SelectRuwaVersion
 from pages.setup_options import SetupOptions
 from pages.welcome_page import WelcomePage
 from resources.styles import stylesheet
 from widget.page_indicator import PageIndicator
 
 logging.basicConfig(
-    level=logging.ERROR,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
@@ -26,15 +27,17 @@ class Installer(QWidget):
     page_class = {
         0: WelcomePage,
         1: LicensePage,
-        2: SetupOptions,
-        3: InstallationComplite,
+        2: SelectRuwaVersion,
+        3: SetupOptions,
+        4: InstallationComplite,
     }
 
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Ruwa Installer")
-        self.setStyleSheet(stylesheet.widget_style)
-        self.setStyleSheet(stylesheet.label_style)
+        self.setStyleSheet(
+            stylesheet.widget_style + "\n" + stylesheet.label_style
+        )
         
         self.setFixedSize(720, 540)
         
@@ -51,16 +54,16 @@ class Installer(QWidget):
         self.background_label.setPixmap(background)
         self.background_label.setScaledContents(True)
         self.background_label.lower()
-        
-        version_label = QLabel(VERSION, self)
-        version_label.setMargin(10)
+
         
         self.stack = QStackedWidget()
         self.pages = {}
+        
         self.options = {}
+        self.version = ""
         layout.addWidget(self.stack)
         
-        self.indicator = PageIndicator(parent=self.stack, count=4)
+        self.indicator = PageIndicator(parent=self.stack, count=len(self.page_class))
         self.indicator.move(
             (self.width()-self.indicator.width()) // 2,
             480
@@ -79,7 +82,7 @@ class Installer(QWidget):
             return
             
         if page_class is InstallationComplite:
-            page = page_class(self.options)
+            page = page_class(self.options, self.version)
         else:
             page = page_class()
         
@@ -88,7 +91,10 @@ class Installer(QWidget):
         
         if hasattr(page, "installRequested"):
             page.installRequested.connect(self.handle_install_options)
-            
+
+        if hasattr(page, "version_select_request"):
+            page.version_select_request.connect(self.handle_version_select)
+    
         if hasattr(page, "nextRequested"):
             page.nextRequested.connect(
                 lambda: self.show_page(1)
@@ -104,6 +110,10 @@ class Installer(QWidget):
 
     def handle_install_options(self, options: dict):
         self.options = options
+
+    def handle_version_select(self, version: str):
+        self.version = version
+        
     
     def show_page(self, step_offset):
         step = self.stack.currentIndex() + step_offset
@@ -117,6 +127,8 @@ class Installer(QWidget):
 
 if __name__ == "__main__":
     app = QApplication()
+    
+    app.setWindowIcon(QtGui.QIcon('resources/images/bg.png'))
     win = Installer()
     win.show()
 

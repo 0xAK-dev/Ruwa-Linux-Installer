@@ -27,16 +27,20 @@ class WorkerThread(QThread):
     failed = Signal(str)
     finished = Signal(str)
 
-    def __init__(self, options: dict):
+    def __init__(self, options: dict, version: str):
         super().__init__()
         self.options = options
+        self.version = version
+        
         self.path = options.pop("path")
         self.add_shortcut = options.pop("add_shortcut")
 
     def run(self):
         logger.info("Starting installer")
-        
-        installer = RuwaInstaller(options=self.options, path=self.path)
+
+        installer = RuwaInstaller(
+            options=self.options, version=self.version, path=self.path
+        )
 
         self.status.emit("Checking dependencies...")
         try:
@@ -85,9 +89,10 @@ class WorkerThread(QThread):
 class InstallationComplite(QWidget):
     closeRequested = Signal()
 
-    def __init__(self, options: dict):
+    def __init__(self, options: dict, version: str):
         super().__init__()
         self.options = options
+        self.version = version
         self.setFixedSize(720, 540)
 
         self.main_layout = QVBoxLayout(self)
@@ -101,7 +106,7 @@ class InstallationComplite(QWidget):
         self.success_widget.hide()
 
         self.loading_widget = LoadingWidget()
-        label1 = QLabel(text="Installing Ruwa")
+        label1 = QLabel(text=f"Installing Ruwa {self.version}")
         font = QFont("Noto Sans", 30)
         label1.setFont(font)
 
@@ -160,7 +165,7 @@ class InstallationComplite(QWidget):
         self.setLayout(self.main_layout)
 
     def start_instalation(self):
-        self.installer = WorkerThread(options=self.options)
+        self.installer = WorkerThread(options=self.options, version=self.version)
 
         self.installer.status.connect(self.handle_install_status)
         self.installer.failed.connect(self.handle_install_failed)

@@ -29,12 +29,13 @@ text_edit_error_style = text_edit_style.replace("color: white;",  "color: #EB5D7
 scrollbar_style = """
 QScrollBar:vertical {
     background: transparent;
-    width: 8px;
+    width: 12px;
+    margin-left: 6px;
 }
 
 QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 100);
-    border-radius: 4px;
+    background: rgba(255, 255, 255, 50);
+    border-radius: 3px;
     min-height: 30px;
 }
 
@@ -64,3 +65,35 @@ QProgressBar::chunk {
 }
 """
 
+
+
+list_widget = """
+QListWidget {
+    background-color: #191919;
+    color: #e6e6e6;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 8px;
+    outline: none;
+}
+
+QListWidget::item {
+    padding: 8px 2px;
+    margin: 2px 0;
+    border-radius: 6px;
+}
+
+QListWidget::item:hover {
+    background-color: #1f1f1f;
+    color: rgb(20, 20, 20);
+}
+
+QListWidget::item:selected {
+    background-color: #797a79;
+    color: rgb(20, 20, 20);
+}
+
+QListWidget::item:disabled {
+    color: rgba(200, 200, 200, 140);
+}
+"""
