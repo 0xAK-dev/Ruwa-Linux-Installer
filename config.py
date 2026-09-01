@@ -1,4 +1,5 @@
 VERSIONS = [
+    "0.3.4-alpha",
     "0.3.3-alpha",
     "0.3.2-alpha",
     "0.3.1-alpha",

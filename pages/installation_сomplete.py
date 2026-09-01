@@ -70,7 +70,12 @@ class WorkerThread(QThread):
 
         self.status.emit("Building project (this may take 1–5 minutes)...")
         if (build_result := installer.build()) is not None:
-            self.failed.emit(f"Build failed:\n{build_result}")
+            if "FAILED: [code=1] tests/RuwaTests" in build_result:
+                logger.error("RuwaTests build failed. Try CMake flag -DBUILD_TESTING=OFF.")
+                msg = "Test build failed (RuwaTests). Try disabling tests using -DBUILD_TESTING=OFF."
+                self.failed.emit(f"Build failed:\n{msg}\n\n{build_result}")
+            else:
+                self.failed.emit(f"Build failed:\n{build_result}")
             return
 
         self.status.emit(f"Installing files to {self.path}")

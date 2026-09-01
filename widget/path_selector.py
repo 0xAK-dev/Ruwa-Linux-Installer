@@ -11,8 +11,7 @@ class PathSelector(QLineEdit):
     def __init__(
         self,
         path: PurePosixPath | str,
-        padding_x=20,
-        padding_y=12,
+        height: int = 50,
         focus_border_color=(150, 150, 150),
         border_color=(50, 50, 50),
         fill_color=(0, 0, 0, 0),
@@ -26,7 +25,7 @@ class PathSelector(QLineEdit):
         self._path = path
         self.setText(str(path))
 
-        self.setFixedHeight(50)
+        self.setFixedHeight(height)
 
         font = QFont(font, self.height() // 4)
         font.setBold(font_bold)
@@ -50,7 +49,7 @@ class PathSelector(QLineEdit):
                 color: white;
                 border: {border_width}px solid {color_to_qss(border_color)};
                 border-radius: {radius if radius is not None else self.height() // 2}px;
-                padding: {padding_y}px {padding_x}px;
+                padding: 12px 20px;
             }}
 
             

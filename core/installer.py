@@ -186,21 +186,22 @@ class RuwaInstaller:
     def configure() ->str | None:
         RuwaInstaller.__apply_patches()
         logger.info("Starting CMake configuration...")
+        dbuild_testing_val = RuwaInstaller.options.pop("-DBUILD_TESTING", None)
+
+        cmake_args = [
+            "cmake",
+            "-S", RuwaInstaller.__project_path,
+            "-B", RuwaInstaller.__build_path,
+            "-G", "Ninja",
+            "-DCMAKE_BUILD_TYPE=Release",
+        ]
+    
+        if dbuild_testing_val is not None:
+            logger.info("DBUILD_TESTING - %s", dbuild_testing_val)
+            cmake_args.append(f"-DBUILD_TESTING={dbuild_testing_val}")
+            
+        result = subprocess.run(cmake_args, capture_output=True, text=True)
         
-        result = subprocess.run(
-            [
-                "cmake",
-                "-S",
-                RuwaInstaller.__project_path,
-                "-B",
-                RuwaInstaller.__build_path,
-                "-G",
-                "Ninja",
-                "-DCMAKE_BUILD_TYPE=Release",
-            ],
-            capture_output=True,
-            text=True,
-        )
         if result.returncode != 0:
             error = result.stderr.strip()
             logger.error( "CMake configuration failed:\n%s", error)
@@ -215,11 +216,12 @@ class RuwaInstaller:
         
         result = subprocess.run(
             ["cmake", "--build", RuwaInstaller.__build_path, "-j"],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
         )
         if result.returncode != 0:
-            error = result.stderr.strip()
+            error = result.stdout.strip()
             logger.error("Build failed:\n%s", error)
             return error
 
